@@ -9,8 +9,8 @@ This Rust-based Canister provides a task management system that allows you to pe
 To get started, clone the repository and navigate to the project directory:
 
 ```bash
-git clone https://github.com/lxmwaniky/rust_task_management_system.git
-cd rust_task_management_system
+git clone https://github.com/lxmwaniky/task_management_system.git
+cd task_management_system
 ```
 
 ### Prerequisites
