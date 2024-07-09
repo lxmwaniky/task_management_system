@@ -1,0 +1,30 @@
+{
+  "canisters": {
+    "task_manager_backend": {
+      "candid": "src/task_manager_backend/task_manager_backend.did",
+      "package": "task_manager_backend",
+      "type": "rust"
+    },
+    "task_manager_frontend": {
+      "dependencies": [
+        "task_manager_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/task_manager_frontend/src/index.html"
+      },
+      "source": [
+        "src/task_manager_frontend/assets",
+        "dist/task_manager_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
