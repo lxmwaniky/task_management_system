@@ -3,7 +3,6 @@ use serde::{Serialize, Deserialize};
 use std::{cell::RefCell, collections::HashMap};
 use std::cell::Cell;
 
-
 // Task struct
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 struct Task {
@@ -21,8 +20,14 @@ thread_local! {
 }
 
 #[ic_cdk::update]
-// create task
-fn create_task(title: String, description: String, is_important: Option<bool>) -> u64 {
+// Create a new task
+fn create_task(title: String, description: String, is_important: Option<bool>) -> Result<u64, String> {
+    // Validate input payload
+    if title.is_empty() || description.is_empty() {
+        return Err("Title and description must be provided and non-empty".to_string());
+    }
+
+    // Increment the ID counter and create a new task
     let id = NEXT_ID.with(|id| {
         let next_id = id.get();
         id.set(next_id + 1);
@@ -37,26 +42,32 @@ fn create_task(title: String, description: String, is_important: Option<bool>) -
         done: false,
     };
 
+    // Insert the new task into storage
     TASKS.with(|tasks| tasks.borrow_mut().insert(id, task));
 
-    id
+    Ok(id)
 }
 
 #[ic_cdk::query]
-// get task by id
+// Get a task by ID
 fn get_task(id: u64) -> Option<Task> {
     TASKS.with(|tasks| tasks.borrow().get(&id).cloned())
 }
 
 #[ic_cdk::query]
-// get all tasks
+// Get all tasks
 fn get_all_tasks() -> Vec<Task> {
     TASKS.with(|tasks| tasks.borrow().values().cloned().collect())
 }
 
 #[ic_cdk::update]
-// update task details
-fn update_task(id: u64, title: Option<String>, description: Option<String>, done: Option<bool>, is_important: Option<bool>) -> bool {
+// Update task details
+fn update_task(id: u64, title: Option<String>, description: Option<String>, done: Option<bool>, is_important: Option<bool>) -> Result<bool, String> {
+    // Validate input payload
+    if title.is_empty() || description.is_empty() {
+        return Err("Title and description must be provided and non-empty".to_string());
+    }
+
     TASKS.with(|tasks| {
         if let Some(task) = tasks.borrow_mut().get_mut(&id) {
             if let Some(new_title) = title {
@@ -68,22 +79,24 @@ fn update_task(id: u64, title: Option<String>, description: Option<String>, done
             if let Some(new_done) = done {
                 task.done = new_done;
             }
-            task.is_important = is_important.unwrap_or(false);
-            true
+            if let Some(new_is_important) = is_important {
+                task.is_important = new_is_important;
+            }
+            Ok(true)
         } else {
-            false
+            Err("Task not found".to_string())
         }
     })
 }
 
 #[ic_cdk::update]
-// delete task
+// Delete a task
 fn delete_task(id: u64) -> bool {
     TASKS.with(|tasks| tasks.borrow_mut().remove(&id).is_some())
 }
 
 #[ic_cdk::query]
-// search task by status
+// Search tasks by completion status
 fn search_task_by_status(done: bool) -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
@@ -94,21 +107,22 @@ fn search_task_by_status(done: bool) -> Vec<Task> {
             .collect()
     })
 }
+
 #[ic_cdk::update]
-// mark task as important
-fn mark_task_as_important(id: u64) -> bool {
+// Mark task as important
+fn mark_task_as_important(id: u64) -> Result<bool, String> {
     TASKS.with(|tasks| {
         if let Some(task) = tasks.borrow_mut().get_mut(&id) {
             task.is_important = true;
-            true
+            Ok(true)
         } else {
-            false
+            Err("Task not found".to_string())
         }
     })
 }
 
 #[ic_cdk::query]
-// get important tasks
+// Get all important tasks
 fn get_important_tasks() -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
@@ -121,7 +135,7 @@ fn get_important_tasks() -> Vec<Task> {
 }
 
 #[ic_cdk::query]
-// get completed tasks
+// Get all completed tasks
 fn get_completed_tasks() -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
@@ -134,7 +148,7 @@ fn get_completed_tasks() -> Vec<Task> {
 }
 
 #[ic_cdk::query]
-// get incomplete tasks
+// Get all incomplete tasks
 fn get_incomplete_tasks() -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
@@ -147,12 +161,13 @@ fn get_incomplete_tasks() -> Vec<Task> {
 }
 
 #[ic_cdk::query]
-// get total number of tasks
+// Get total number of tasks
 fn get_total_number_of_tasks() -> u64 {
     TASKS.with(|tasks| tasks.borrow().len() as u64)
 }
+
 #[ic_cdk::query]
-// Get tasks with a specific description
+// Get tasks by description
 fn get_tasks_by_description(description: String) -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
@@ -165,7 +180,7 @@ fn get_tasks_by_description(description: String) -> Vec<Task> {
 }
 
 #[ic_cdk::query]
-// Get tasks based on importance status
+// Get tasks by importance status
 fn get_tasks_by_importance_status(is_important: bool) -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
@@ -185,35 +200,34 @@ fn clear_completed_tasks() {
     })
 }
 
-
 #[ic_cdk::update]
 // Mark task as done
-fn mark_task_as_done(id: u64) -> bool {
+fn mark_task_as_done(id: u64) -> Result<bool, String> {
     TASKS.with(|tasks| {
         if let Some(task) = tasks.borrow_mut().get_mut(&id) {
             task.done = true;
-            true
+            Ok(true)
         } else {
-            false
+            Err("Task not found".to_string())
         }
     })
 }
 
 #[ic_cdk::update]
 // Reset task status to not done
-fn reset_task_status(id: u64) -> bool {
+fn reset_task_status(id: u64) -> Result<bool, String> {
     TASKS.with(|tasks| {
         if let Some(task) = tasks.borrow_mut().get_mut(&id) {
             task.done = false;
-            true
+            Ok(true)
         } else {
-            false
+            Err("Task not found".to_string())
         }
     })
 }
 
 #[ic_cdk::query]
-// Get tasks with a specific title
+// Get tasks by title
 fn get_tasks_by_title(title: String) -> Vec<Task> {
     TASKS.with(|tasks| {
         tasks
