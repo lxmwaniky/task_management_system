@@ -4,14 +4,22 @@ type customTask = record {
   description: text;
   done: bool;
   is_important: bool;
+  created_at: nat64;
+  updated_at: nat64;
+};
+
+type TaskError = variant {
+  NotFound;
+  InvalidInput;
+  DuplicateTask;
 };
 
 service : {
-  "create_task": (text, text, opt bool) -> (nat64);
-  "get_task": (nat64) -> (opt customTask) query;
+  "create_task": (text, text, opt bool) -> (result nat64 TaskError);
+  "get_task": (nat64) -> (result opt customTask TaskError) query;
   "get_all_tasks": () -> (vec customTask) query;
-  "update_task": (nat64, opt text, opt text, opt bool, opt bool) -> ();
-  "delete_task": (nat64) -> (bool);
+  "update_task": (nat64, opt text, opt text, opt bool, opt bool) -> (result bool TaskError);
+  "delete_task": (nat64) -> (result bool TaskError);
   "search_task_by_status": (bool) -> (vec customTask) query;
   "get_important_tasks": () -> (vec customTask) query;
   "get_completed_tasks": () -> (vec customTask) query;
@@ -20,7 +28,10 @@ service : {
   "get_tasks_by_description": (text) -> (vec customTask) query;
   "get_tasks_by_importance_status": (bool) -> (vec customTask) query;
   "clear_completed_tasks": () -> ();
-  "mark_task_as_done": (nat64) -> ();
-  "reset_task_status": (nat64) -> ();
+  "mark_task_as_done": (nat64) -> (result bool TaskError);
+  "reset_task_status": (nat64) -> (result bool TaskError);
   "get_tasks_by_title": (text) -> (vec customTask) query;
+  "toggle_task_importance": (nat64) -> (result bool TaskError);
+  "get_tasks_created_after": (nat64) -> (vec customTask) query;
+  "get_tasks_updated_after": (nat64) -> (vec customTask) query;
 };
